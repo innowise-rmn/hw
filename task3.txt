@@ -1,0 +1,54 @@
+tsx:
+import React,{useState,useEffect}from'react';
+
+export default function Dashboard(){
+  const [d,setD] = useState<number|null>(null);
+  useEffect(()=>{
+    let t=0;
+    for(let i=0;i<1e8;i++){ t+=i; }
+    setD(t);
+  },[]);
+  return <div>{d}</div>;
+}
+
+
+import React, { useState, useEffect } from 'react';
+
+export default function Dashboard() {
+  const [d, setD] = useState<number | null>(null);
+  const [isCalculating, setIsCalculating] = useState(true);
+
+  useEffect(() => {
+    // Create a new worker
+    const worker = new Worker(
+      new URL('../workers/calculationWorker.ts', import.meta.url),
+      { type: 'module' }
+    );
+
+    // Set up the message handler to receive the result
+    worker.onmessage = (event) => {
+      setD(event.data);
+      setIsCalculating(false);
+      // Terminate the worker when done
+      worker.terminate();
+    };
+
+    // Start the calculation
+    worker.postMessage(null);
+
+    // Clean up the worker if the component unmounts before calculation completes
+    return () => {
+      worker.terminate();
+    };
+  }, []);
+
+  return (
+    <div>
+      {isCalculating ? (
+        <p>Calculating... (UI remains responsive)</p>
+      ) : (
+        <div>{d}</div>
+      )}
+    </div>
+  );
+}
